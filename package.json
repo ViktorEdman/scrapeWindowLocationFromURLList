@@ -1,0 +1,18 @@
+{
+  "name": "urlscraper",
+  "version": "1.0.0",
+  "description": "Scrape urls from list of urls",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.19.2",
+    "cheerio": "^1.0.0-rc.3",
+    "fast-csv": "^4.3.1",
+    "fs": "0.0.1-security",
+    "puppeteer": "^4.0.1"
+  }
+}
