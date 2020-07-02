@@ -1,40 +1,38 @@
 const fastcsv = require('fast-csv');
 const fs = require('fs');
-const puppeteer = require('puppeteer');
 const {exit} = require('process');
 const Sitemapper = require('sitemapper');
 const sitemap = new Sitemapper();
+const cheerio = require('cheerio')
+const axios = require('axios')
 
 const args = process.argv.slice(2);
 const urlToMap = args[0];
 const fileToWrite = args[1];
 
-async function grabRealUrl(url) {
-    const browser = await puppeteer.launch({
-        args: ['--no-sandbox']
-    })
-    try {
-        let page = await browser.newPage();
-        await page.goto(url);
-        let grabbedUrl = page.url();
+async function grabBreadCrumbUrl(url) {
+    let redirectObject = await axios.get(url).then((response) => {
+        const $ = cheerio.load(response.data);
+        let breadCrumbPath = "";
+        $('.breadcrumb span, span.breadcrumb').each( async function (i, element) {
+            let breadCrumb = $(element).text();
+            breadCrumbPath += breadCrumb.toLowerCase() + "/";
+            
+        });
+        let newPath = "/category/" + breadCrumbPath;
         return {
-            fromUrl: grabbedUrl,
+            fromUrl: newPath,
             toUrl: url
         };
-    } catch (error) {
-        console.error(error);
-    } finally {
-        await browser.close();
-    }
+    })
+    return redirectObject;
 }
-
 
 function mapSite(siteMapUrl, filename) {
     const ws = fs.createWriteStream(filename);
     sitemap.fetch(siteMapUrl).then(async function (sites) {
-        console.log(sites.sites);
-        process.setMaxListeners(sites.sites.length);
-        const requestArray = await Promise.all(sites.sites.map(grabRealUrl));
+        const requestArray = await Promise.all(sites.sites.map(grabBreadCrumbUrl));
+        console.log(requestArray);
         fastcsv
             .write(requestArray, { headers: true })
             .pipe(ws);
@@ -53,8 +51,3 @@ if (urlToMap === undefined || fileToWrite === undefined) {
     console.log('Output file: ' + fileToWrite);
     mapSite(urlToMap, fileToWrite);
 }
-
-
-
-
-
