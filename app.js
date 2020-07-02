@@ -4,7 +4,7 @@ const {exit} = require('process');
 const Sitemapper = require('sitemapper');
 const sitemap = new Sitemapper();
 const cheerio = require('cheerio')
-const axios = require('axios')
+const axios = require('axios');
 
 const args = process.argv.slice(2);
 const urlToMap = args[0];
@@ -14,7 +14,7 @@ async function grabBreadCrumbUrl(url) {
     let redirectObject = await axios.get(url).then((response) => {
         const $ = cheerio.load(response.data);
         let breadCrumbPath = "";
-        $('.breadcrumb span, span.breadcrumb').each( async function (i, element) {
+        $('.breadcrumb span, span.breadcrumb').each(function (i, element) {
             let breadCrumb = $(element).text();
             breadCrumbPath += breadCrumb.toLowerCase() + "/";
             
@@ -31,7 +31,7 @@ async function grabBreadCrumbUrl(url) {
 function mapSite(siteMapUrl, filename) {
     const ws = fs.createWriteStream(filename);
     sitemap.fetch(siteMapUrl).then(async function (sites) {
-        const requestArray = await Promise.all(sites.sites.map(grabBreadCrumbUrl));
+        const requestArray =  await Promise.all(sites.sites.map(grabBreadCrumbUrl));
         console.log(requestArray);
         fastcsv
             .write(requestArray, { headers: true })
