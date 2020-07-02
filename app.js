@@ -25,7 +25,8 @@ async function grabRealUrl(url) {
 }
 
 const siteMapUrl = "https://viktor5.starwebserver.se/sitemap-categories.xml";
-const outputFilename = fs.createWriteStream('301.csv');
+const outputFilename = "301.csv"
+const ws = fs.createWriteStream(outputFilename);
 
 sitemap.fetch(siteMapUrl).then(async function (sites) {
     console.log(sites.sites);
@@ -33,8 +34,6 @@ sitemap.fetch(siteMapUrl).then(async function (sites) {
     const requestArray = await Promise.all(sites.sites.map(grabRealUrl));
     fastcsv
         .write(requestArray, { headers: true })
-        .pipe(outputFilename);
+        .pipe(ws);
+    console.log('Wrote to '+outputFilename);
 });
-
-
-
