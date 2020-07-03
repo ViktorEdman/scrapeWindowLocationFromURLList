@@ -5,7 +5,6 @@ const Sitemapper = require('sitemapper');
 const sitemap = new Sitemapper();
 const cheerio = require('cheerio')
 const axios = require('axios');
-const { request } = require('http');
 
 const args = process.argv.slice(2);
 const urlToMap = args[0];
@@ -31,17 +30,17 @@ async function grabBreadCrumbUrl(url) {
 
 
 
-function mapSite(siteMapUrl, filename) {
+async function mapSite(siteMapUrl, filename) {
     const ws = fs.createWriteStream(filename);
-    sitemap.fetch(siteMapUrl).then(async function (sites) {
-        const requestArray =  await Promise.all(sites.sites.map(grabBreadCrumbUrl));
-        console.log(requestArray);
-        fastcsv
-            .write(requestArray, { headers: true })
-            .pipe(ws);
-        console.log('Wrote to ' + filename);
-    })
-};
+    const sites = await sitemap.fetch(siteMapUrl);
+    const siteUrls = sites.sites;
+    const requestArray = await Promise.all(siteUrls.map(grabBreadCrumbUrl));
+    console.log(requestArray);
+    fastcsv
+    .write(requestArray, { headers: true })
+    .pipe(ws);
+    console.log('Wrote to ' + filename);
+}
 
 
 if (urlToMap === undefined || fileToWrite === undefined) {
