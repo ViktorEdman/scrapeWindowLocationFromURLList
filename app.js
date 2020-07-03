@@ -5,28 +5,31 @@ const Sitemapper = require('sitemapper');
 const sitemap = new Sitemapper();
 const cheerio = require('cheerio')
 const axios = require('axios');
+const { request } = require('http');
 
 const args = process.argv.slice(2);
 const urlToMap = args[0];
 const fileToWrite = args[1];
 
 async function grabBreadCrumbUrl(url) {
-    let redirectObject = await axios.get(url).then((response) => {
-        const $ = cheerio.load(response.data);
-        let breadCrumbPath = "";
-        $('.breadcrumb span, span.breadcrumb').each(function (i, element) {
-            let breadCrumb = $(element).text();
+    let response = await axios.get(url)
+    const $ = cheerio.load(response.data);
+    let breadCrumbPath = "";
+    $('.breadcrumb span, span.breadcrumb').each(function (i, element) {
+        let breadCrumb = $(element).text();
+        breadCrumbPath += breadCrumb.toLowerCase() + "/";            
             breadCrumbPath += breadCrumb.toLowerCase() + "/";
-            
-        });
-        let newPath = "/category/" + breadCrumbPath;
-        return {
-            fromUrl: newPath,
-            toUrl: url
-        };
-    })
+        breadCrumbPath += breadCrumb.toLowerCase() + "/";            
+    });
+    let newPath = "/category/" + breadCrumbPath;
+    let redirectObject = {
+        fromUrl: newPath,
+        toUrl: url
+    };
     return redirectObject;
 }
+
+
 
 function mapSite(siteMapUrl, filename) {
     const ws = fs.createWriteStream(filename);
