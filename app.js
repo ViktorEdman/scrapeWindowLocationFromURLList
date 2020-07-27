@@ -5,13 +5,19 @@ const Sitemapper = require('sitemapper');
 const sitemap = new Sitemapper();
 const cheerio = require('cheerio')
 const axios = require('axios');
+const Bottleneck = require('bottleneck')
+
+const limiter = new Bottleneck({
+    minTime: 100,
+    maxConcurrent: 5
+})
 
 const args = process.argv.slice(2);
 const urlToMap = args[0];
 const fileToWrite = args[1];
 
 async function grabBreadCrumbUrl(url) {
-    let response = await axios.get(url)
+    let response = await limiter.schedule(()=>axios.get(url))
     const $ = cheerio.load(response.data);
     let breadCrumbPath = "";
     $('.breadcrumb span, span.breadcrumb').each(function (i, element) {
@@ -25,6 +31,7 @@ async function grabBreadCrumbUrl(url) {
         fromUrl: newPath,
         toUrl: url
     };
+    console.log(`Mapped ${url}`)
     return redirectObject;
 }
 
