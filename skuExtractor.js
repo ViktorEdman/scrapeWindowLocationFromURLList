@@ -8,55 +8,66 @@ const axios = require('axios');
 const Bottleneck = require('bottleneck')
 
 const limiter = new Bottleneck({
-//    minTime: 100,
-    maxConcurrent: 5
+    minTime: 100,
+    maxConcurrent: 20
 })
 
 const args = process.argv.slice(2);
-const sitemaps = [
-    "https://viktorvelltra.sws-staging.se/sitemap-products-1.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-2.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-3.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-4.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-5.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-6.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-7.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-8.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-9.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-10.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-11.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-12.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-13.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-14.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-15.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-16.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-17.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-18.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-19.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-20.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-21.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-22.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-23.xml",
-    "https://viktorvelltra.sws-staging.se/sitemap-products-24.xml"
-];
-const fileToWrite = 'velltratest.csv';
+const siteMapUrl = "https://larsjohanna.se/sitemap.php"
+const fileToWrite = 'larsjohanna.csv';
 
 
 /* console.log('Sitemap URL: ' + urlToMap); */
 console.log('Output file: ' + fileToWrite);
-mapSite(sitemaps, fileToWrite);
+//
+(async function() {
+    const siteUrls = await sitemap.fetch(siteMapUrl)
+    const skuArray = await Promise.all(siteUrls.sites.map(grabSku))
+    const ws = fs.createWriteStream(fileToWrite);
+    console.log(skuArray);
+    fastcsv
+        .write(skuArray, {
+            headers: true
+        })
+        .pipe(ws)
+        .end();
+    console.log('Wrote to ' + fileToWrite);
 
-async function grabSku(url) {
-    let response = await limiter.schedule(()=>axios.get(url))
-    const $ = cheerio.load(response.data);
-    console.log(`Mapped ${url}`)
-    return {
-        sku: $('dd.product-sku').text(),
-        mpn: $('dd.product-mpn').text(),
-        name: $('h1.product-name').text(),
-        url: url,
+    
+})()
 
-    };
+async function grabSku(url, index, array) {
+    try {
+        let response = await limiter.schedule(() => axios.get(url))
+        const $ = cheerio.load(response.data);
+        console.log(`Mapped ${url}. ${index+1} of ${array.length}. ${Math.floor(((index+1)/array.length)*100)}%`)
+        if ($('#body').prop('class').includes('type-product')) {
+            return {
+                site_type: 'product',
+                sku: $('.art_num').text() ? $('.art_num').text().match(/\d+/g)[0] : '',
+                url: url,
+            };
+        } else if ($('#body').prop('class').includes('type-category')) {
+            return {
+                site_type: 'category',
+                sku: 'Not applicable',
+                url: url,
+            };
+        } else if ($('#body').prop('class').includes('type-brand')) {
+            return {
+                site_type: 'brand',
+                sku: 'Not applicable',
+                url: url,
+            };
+        }
+    } catch (error) {
+        console.log(error.response.status)
+        return {
+            site_type: error.response.status,
+            url: url
+        }
+    }
+    
 }
 
 
