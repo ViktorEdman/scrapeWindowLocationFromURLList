@@ -14,7 +14,7 @@ const limiter = new Bottleneck({
 
 const args = process.argv.slice(2);
 const siteMapUrl = "https://larsjohanna.se/sitemap.php"
-const fileToWrite = 'larsjohanna.csv';
+const fileToWrite = 'larsjohannaStarweb.csv';
 
 
 /* console.log('Sitemap URL: ' + urlToMap); */
@@ -30,7 +30,7 @@ console.log('Output file: ' + fileToWrite);
             headers: true
         })
         .pipe(ws)
-        .end();
+        .on('finish', () => console.log('Wrote to file.'));
     console.log('Wrote to ' + fileToWrite);
 
     
@@ -61,32 +61,11 @@ async function grabSku(url, index, array) {
             };
         }
     } catch (error) {
-        console.log(error.response.status)
-        return {
-            site_type: error.response.status,
-            url: url
-        }
+        return false
     }
     
 }
 
-
-
-
-async function mapSite(sitemaps, filename) {
-    const ws = fs.createWriteStream(filename);
-    const sites = await Promise.all(sitemaps.map(sitemapUrl => {
-        return sitemap.fetch(sitemapUrl);
-    }));
-    const siteUrls = [].concat(...sites.map(site => site.sites))
-    console.log(siteUrls);
-    const requestArray = await Promise.all(siteUrls.map(grabSku));
-    console.log(requestArray);
-    fastcsv
-    .write(requestArray, { headers: true })
-    .pipe(ws);
-    console.log('Wrote to ' + filename);
-}
 
 
 
