@@ -7,9 +7,7 @@ const cheerio = require('cheerio')
 const axios = require('axios');
 const Bottleneck = require('bottleneck')
 
-const limiter = new Bottleneck({
-    maxConcurrent: 20
-})
+const limiter = new Bottleneck({})
 
 const siteMapUrl = "https://www.mopeddelar.se/sitemap.xml?type=products"
 const fileToWrite = 'mopeddelarBildUrl.csv'
@@ -39,7 +37,7 @@ async function grabImageUrl(url, index, array) {
         //load cheerio parser on HTML
         const $ = cheerio.load(response.data);
         console.log(`Mapped ${url}. ${index+1} of ${array.length}. ${Math.floor(((index+1)/array.length)*100)}%`)
-
+        
         //find product sku
         let productSku = ""
         $('.product-meta span').each(function(index, element) {
@@ -47,19 +45,19 @@ async function grabImageUrl(url, index, array) {
                 productSku = $(this).text().split(' ')[1]
             }
         })
-
+        
         //Collect images
         let imageArray = []        
         $('.big-pic a').each(function(index, element) {
             imageArray.push($(element).prop('href'))
         })
-
+        
         //Combine sku and imageUrls
         const productObject = {
             sku: productSku,
             imageUrls: imageArray.join('|')
         }
-
+        
         //Write to console
         console.log(productObject)
         //Write to csv
